@@ -1,0 +1,16 @@
+{
+  "admin": {
+    "password_hash": "56f47d12d8b3f434a4be8350116f73cb62b56c79ea323a3cb02221ec5dab2054",
+    "created_at": "2025-09-28T20:18:18.396625",
+    "role": "admin",
+    "email": "admin@mma-planner.com",
+    "full_name": "Administrador"
+  },
+  "demo": {
+    "password_hash": "12ecd1831120047d1262d39853814a515089d2f6ac356f10bf19cdd7f2de37a7",
+    "created_at": "2025-09-28T20:18:18.396675",
+    "role": "user",
+    "email": "demo@mma-planner.com",
+    "full_name": "Usuario Demo"
+  }
+}

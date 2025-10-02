@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MMA Training Planner Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #366092;
+            --secondary-color: #52796f;
+            --accent-color: #f4a261;
+            --danger-color: #e76f51;
+            --success-color: #2a9d8f;
+            --dark-color: #264653;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e9ecef 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 35px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 1.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(54, 96, 146, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, #20b2aa 100%);
+            border: none;
+            border-radius: 10px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
+            border: none;
+            border-radius: 10px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .table-container {
+            max-height: 600px;
+            overflow-y: auto;
+            border-radius: 15px;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border: none;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-color: #e9ecef;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(54, 96, 146, 0.05);
+            transform: scale(1.01);
+            transition: all 0.2s ease;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(54, 96, 146, 0.25);
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+            padding: 1rem 1.5rem;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+        }
+
+        .loading {
+            display: none;
+        }
+
+        .loading.show {
+            display: inline-block;
+        }
+
+        .export-buttons .btn {
+            margin: 0.25rem;
+            min-width: 120px;
+        }
+
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 2rem 0;
+            }
+            
+            .export-buttons .btn {
+                width: 100%;
+                margin: 0.25rem 0;
+            }
+        }
+
+        /* Animaciones personalizadas */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand text-white fw-bold" href="#">
+                <i class="bi bi-lightning-charge-fill"></i> MMA Training Planner Pro
+            </a>
+            <div class="navbar-nav ms-auto">
+                <button class="btn btn-outline-light" onclick="showStatsModal()">
+                    <i class="bi bi-graph-up"></i> Estadísticas
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold animate__animated animate__fadeInDown">
+                🥋 Planificador de Entrenamientos MMA
+            </h1>
+            <p class="lead animate__animated animate__fadeInUp">
+                Registra, analiza y optimiza tu entrenamiento de artes marciales mixtas
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Alertas -->
+        <div id="alert-container"></div>
+
+        <!-- Cards de Resumen -->
+        <div class="row mb-4" id="stats-cards">
+            <!-- Se llenarán dinámicamente -->
+        </div>
+
+        <!-- Formulario de Nueva Sesión -->
+        <div class="card mb-4 animate__animated animate__fadeInUp">
+            <div class="card-header">
+                <i class="bi bi-plus-circle-fill"></i> Agregar Nueva Sesión
+            </div>
+            <div class="card-body">
+                <form id="session-form" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="fecha" class="form-label">
+                            <i class="bi bi-calendar3"></i> Fecha
+                        </label>
+                        <input type="date" id="fecha" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="tipo" class="form-label">
+                            <i class="bi bi-lightning-fill"></i> Tipo
+                        </label>
+                        <select id="tipo" class="form-select" required>
+                            <option value="Cardio">🏃 Cardio</option>
+                            <option value="Fuerza">🏋️ Fuerza</option>
+                            <option value="Judo">🥋 Judo</option>
+                            <option value="MMA">🥊 MMA</option>
+                            <option value="Striking">👊 Striking</option>
+                            <option value="Grappling">🤼 Grappling</option>
+                            <option value="Técnico">🎯 Técnico</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="tiempo" class="form-label">
+                            <i class="bi bi-clock"></i> Tiempo (min)
+                        </label>
+                        <input type="number" id="tiempo" class="form-control" min="1" max="480" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="peso" class="form-label">
+                            <i class="bi bi-speedometer2"></i> Peso (kg)
+                        </label>
+                        <input type="number" id="peso" class="form-control" min="30" max="200" step="0.1">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="intensidad" class="form-label">
+                            <i class="bi bi-fire"></i> Intensidad
+                        </label>
+                        <select id="intensidad" class="form-select">
+                            <option value="Baja">🟢 Baja</option>
+                            <option value="Media" selected>🟡 Media</option>
+                            <option value="Alta">🔴 Alta</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label for="notas" class="form-label">
+                            <i class="bi bi-journal-text"></i> Notas (opcional)
+                        </label>
+                        <input type="text" id="notas" class="form-control" maxlength="500" 
+                               placeholder="Ejercicios específicos, sensaciones, objetivos...">
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <span class="loading spinner-border spinner-border-sm me-2" role="status"></span>
+                            <i class="bi bi-plus-lg"></i> Guardar Sesión
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Controles y Exportación -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list-ul"></i> Historial de Sesiones
+                            <span class="badge bg-primary ms-2" id="total-sessions-badge">0</span>
+                        </h5>
+                    </div>
+                    <div class="col-md-6 text-end export-buttons">
+                        <button class="btn btn-outline-primary" onclick="exportData('csv')">
+                            <i class="bi bi-filetype-csv"></i> CSV
+                        </button>
+                        <button class="btn btn-outline-success" onclick="exportData('excel')">
+                            <i class="bi bi-file-earmark-excel"></i> Excel
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="exportData('pdf')">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Sesiones -->
+        <div class="card animate__animated animate__fadeInUp">
+            <div class="table-container">
+                <table class="table table-hover" id="sessions-table">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Tiempo</th>
+                            <th>Peso</th>
+                            <th>Calorías</th>
+                            <th>Intensidad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessions-tbody">
+                        <!-- Se llenará dinámicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Estadísticas -->
+    <div class="modal fade" id="statsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-graph-up"></i> Estadísticas Completas
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="stats-content">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edición -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil-square"></i> Editar Sesión
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-form">
+                        <input type="hidden" id="edit-session-id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="edit-fecha" class="form-label">Fecha</label>
+                                <input type="date" id="edit-fecha" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-tipo" class="form-label">Tipo</label>
+                                <select id="edit-tipo" class="form-select" required>
+                                    <option value="Cardio">🏃 Cardio</option>
+                                    <option value="Fuerza">🏋️ Fuerza</option>
+                                    <option value="Judo">🥋 Judo</option>
+                                    <option value="MMA">🥊 MMA</option>
+                                    <option value="Striking">👊 Striking</option>
+                                    <option value="Grappling">🤼 Grappling</option>
+                                    <option value="Técnico">🎯 Técnico</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-tiempo" class="form-label">Tiempo (min)</label>
+                                <input type="number" id="edit-tiempo" class="form-control" min="1" max="480" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="edit-peso" class="form-label">Peso (kg)</label>
+                                <input type="number" id="edit-peso" class="form-control" min="30" max="200" step="0.1">
+                            </div>
+                            <div class="col-12">
+                                <label for="edit-intensidad" class="form-label">Intensidad</label>
+                                <select id="edit-intensidad" class="form-select">
+                                    <option value="Baja">🟢 Baja</option>
+                                    <option value="Media">🟡 Media</option>
+                                    <option value="Alta">🔴 Alta</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="edit-notas" class="form-label">Notas</label>
+                                <input type="text" id="edit-notas" class="form-control" maxlength="500">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="saveEditedSession()">
+                        <i class="bi bi-check-lg"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuración de la API
+        const API_BASE = 'http://127.0.0.1:5000/api';
+
+        // Variables globales
+        let sessions = [];
+        let currentEditingId = null;
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer fecha actual por defecto
+            document.getElementById('fecha').valueAsDate = new Date();
+            
+            // Cargar datos iniciales
+            loadSessions();
+            loadStats();
+            
+            // Event listeners
+            document.getElementById('session-form').addEventListener('submit', handleSubmitSession);
+        });
+
+        // Mostrar alertas
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alert-container');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertHTML = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show animate__animated animate__fadeInDown" role="alert">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertContainer.innerHTML = alertHTML;
+            
+            // Auto-dismiss después de 5 segundos
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+
+        // Cargar sesiones
+        async function loadSessions() {
+            try {
+                const response = await fetch(`${API_BASE}/sessions`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    sessions = result.data;
+                    renderSessions();
+                    updateTotalBadge();
+                } else {
+                    showAlert('Error al cargar sesiones: ' + result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error de conexión al cargar sesiones', 'danger');
+            }
+        }
+
+        // Renderizar tabla de sesiones
+        function renderSessions() {
+            const tbody = document.getElementById('sessions-tbody');
+            
+            if (sessions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                            <h5>No hay sesiones registradas</h5>
+                            <p>Agrega tu primera sesión de entrenamiento usando el formulario anterior</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = sessions.map(session => {
+                const intensityColor = {
+                    'Baja': 'success',
+                    'Media': 'warning',
+                    'Alta': 'danger'
+                };
+
+                return `
+                    <tr class="animate__animated animate__fadeIn">
+                        <td>
+                            <i class="bi bi-calendar3"></i> 
+                            ${formatDate(session.fecha)}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">${session.tipo}</span>
+                        </td>
+                        <td>
+                            <i class="bi bi-clock"></i> 
+                            ${session.tiempo} min
+                        </td>
+                        <td>
+                            ${session.peso > 0 ? session.peso + ' kg' : '-'}
+                        </td>
+                        <td>
+                            <i class="bi bi-fire"></i> 
+                            ${session.calorias || 0} cal
+                        </td>
+                        <td>
+                            <span class="badge bg-${intensityColor[session.intensidad] || 'secondary'}">
+                                ${session.intensidad || 'Media'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" 
+                                    onclick="editSession(${session.id})" 
+                                    title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteSession(${session.id})" 
+                                    title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Manejar envío del formulario
+        async function handleSubmitSession(e) {
+            e.preventDefault();
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const loading = submitBtn.querySelector('.loading');
+            
+            // Mostrar loading
+            loading.classList.add('show');
+            submitBtn.disabled = true;
+            
+            const formData = {
+                fecha: document.getElementById('fecha').value,
+                tipo: document.getElementById('tipo').value,
+                tiempo: parseInt(document.getElementById('tiempo').value),
+                peso: parseFloat(document.getElementById('peso').value) || 0,
+                intensidad: document.getElementById('intensidad').value,
+                notas: document.getElementById('notas').value.trim()
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showAlert('¡Sesión guardada exitosamente! 🎉');
+                    document.getElementById('session-form').reset();
+                    document.getElementById('fecha').valueAsDate = new Date();
+                    await loadSessions();
+                    await loadStats();
+                } else {
+                    showAlert('Error: ' + result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error de conexión al guardar la sesión', 'danger');
+            } finally {
+                // Ocultar loading
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+        }
+
+        // Editar sesión
+        function editSession(sessionId) {
+            const session = sessions.find(s => s.id === sessionId);
+            if (!session) return;
+
+            currentEditingId = sessionId;
+            
+            // Llenar formulario de edición
+            document.getElementById('edit-session-id').value = sessionId;
+            document.getElementById('edit-fecha').value = session.fecha;
+            document.getElementById('edit-tipo').value = session.tipo;
+            document.getElementById('edit-tiempo').value = session.tiempo;
+            document.getElementById('edit-peso').value = session.peso || '';
+            document.getElementById('edit-intensidad').value = session.intensidad || 'Media';
+            document.getElementById('edit-notas').value = session.notas || '';
+            
+            // Mostrar modal
+            new bootstrap.Modal(document.getElementById('editModal')).show();
+        }
+
+        // Guardar sesión editada
+        async function saveEditedSession() {
+            if (!currentEditingId) return;
+
+            const formData = {
+                fecha: document.getElementById('edit-fecha').value,
+                tipo: document.getElementById('edit-tipo').value,
+                tiempo: parseInt(document.getElementById('edit-tiempo').value),
+                peso: parseFloat(document.getElementById('edit-peso').value) || 0,
+                intensidad: document.getElementById('edit-intensidad').value,
+                notas: document.getElementById('edit-notas').value.trim()
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${currentEditingId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showAlert('¡Sesión actualizada exitosamente! ✨');
+                    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                    await loadSessions();
+                    await loadStats();
+                    currentEditingId = null;
+                } else {
+                    showAlert('Error: ' + result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error de conexión al actualizar la sesión', 'danger');
+            }
+        }
+
+        // Eliminar sesión
+        async function deleteSession(sessionId) {
+            const session = sessions.find(s => s.id === sessionId);
+            if (!session) return;
+
+            const confirmed = confirm(
+                `¿Estás seguro de eliminar la sesión de ${session.tipo} del ${formatDate(session.fecha)}?`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showAlert('Sesión eliminada correctamente', 'info');
+                    await loadSessions();
+                    await loadStats();
+                } else {
+                    showAlert('Error: ' + result.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error de conexión al eliminar la sesión', 'danger');
+            }
+        }
+
+        // Cargar estadísticas resumidas
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats/summary`);
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    renderStatsCards(result.data);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Renderizar cards de estadísticas
+        function renderStatsCards(stats) {
+            const container = document.getElementById('stats-cards');
+            
+            const cards = [
+                {
+                    title: 'Total Sesiones',
+                    value: stats.total_sessions,
+                    icon: 'bi-list-check',
+                    color: 'primary'
+                },
+                {
+                    title: 'Tiempo Total',
+                    value: `${stats.total_time_hours}h`,
+                    icon: 'bi-clock',
+                    color: 'success'
+                },
+                {
+                    title: 'Calorías Quemadas',
+                    value: stats.total_calories.toLocaleString(),
+                    icon: 'bi-fire',
+                    color: 'danger'
+                },
+                {
+                    title: 'Racha Actual',
+                    value: `${stats.current_streak} días`,
+                    icon: 'bi-lightning',
+                    color: 'warning'
+                }
+            ];
+
+            container.innerHTML = cards.map(card => `
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card stats-card h-100 animate__animated animate__fadeInUp">
+                        <div class="card-body text-center">
+                            <div class="text-${card.color} mb-3">
+                                <i class="${card.icon}" style="font-size: 2.5rem;"></i>
+                            </div>
+                            <h3 class="card-title text-${card.color}">${card.value}</h3>
+                            <p class="card-text text-muted">${card.title}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Mostrar modal de estadísticas completas
+        async function showStatsModal() {
+            try {
+                const [summaryRes, typeRes, monthlyRes] = await Promise.all([
+                    fetch(`${API_BASE}/stats/summary`),
+                    fetch(`${API_BASE}/stats/by-type`),
+                    fetch(`${API_BASE}/stats/monthly`)
+                ]);
+
+                const summary = await summaryRes.json();
+                const byType = await typeRes.json();
+                const monthly = await monthlyRes.json();
+
+                if (summary.status === 'success') {
+                    renderCompleteStats(summary.data, byType.data, monthly.data);
+                    new bootstrap.Modal(document.getElementById('statsModal')).show();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al cargar estadísticas completas', 'danger');
+            }
+        }
+
+        // Renderizar estadísticas completas
+        function renderCompleteStats(summary, byType, monthly) {
+            const content = document.getElementById('stats-content');
+            
+            content.innerHTML = `
+                <div class="row">
+                    <!-- Resumen General -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-primary">📊 Resumen General</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr><td><strong>Total de Sesiones:</strong></td><td>${summary.total_sessions}</td></tr>
+                                <tr><td><strong>Tiempo Total:</strong></td><td>${summary.total_time_hours} horas</td></tr>
+                                <tr><td><strong>Calorías Totales:</strong></td><td>${summary.total_calories.toLocaleString()}</td></tr>
+                                <tr><td><strong>Promedio por Sesión:</strong></td><td>${summary.avg_session_time} min</td></tr>
+                                <tr><td><strong>Tipo Favorito:</strong></td><td>${summary.most_frequent_type}</td></tr>
+                                <tr><td><strong>Racha Actual:</strong></td><td>${summary.current_streak} días</td></tr>
+                                <tr><td><strong>Racha Máxima:</strong></td><td>${summary.longest_streak} días</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Actividad Reciente -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="text-success">⚡ Actividad Reciente</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr><td><strong>Últimos 7 días:</strong></td><td>${summary.recent_activity.last_7_days.sessions} sesiones</td></tr>
+                                <tr><td><strong>Tiempo (7 días):</strong></td><td>${summary.recent_activity.last_7_days.total_time} min</td></tr>
+                                <tr><td><strong>Últimos 30 días:</strong></td><td>${summary.recent_activity.last_30_days.sessions} sesiones</td></tr>
+                                <tr><td><strong>Tiempo (30 días):</strong></td><td>${summary.recent_activity.last_30_days.total_time} min</td></tr>
+                                <tr><td><strong>Promedio Semanal:</strong></td><td>${summary.weekly_average.sessions} sesiones</td></tr>
+                                <tr><td><strong>Tiempo Semanal:</strong></td><td>${summary.weekly_average.time} min</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas por Tipo -->
+                <div class="mb-4">
+                    <h6 class="text-warning">🥊 Por Tipo de Entrenamiento</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Sesiones</th>
+                                    <th>%</th>
+                                    <th>Tiempo Total</th>
+                                    <th>Promedio</th>
+                                    <th>Calorías</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${byType.map(type => `
+                                    <tr>
+                                        <td><span class="badge bg-primary">${type.tipo}</span></td>
+                                        <td>${type.sessions}</td>
+                                        <td>${type.percentage}%</td>
+                                        <td>${type.total_time} min</td>
+                                        <td>${type.avg_time} min</td>
+                                        <td>${type.total_calories}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Estadísticas Mensuales -->
+                ${monthly.length > 0 ? `
+                    <div class="mb-4">
+                        <h6 class="text-info">📅 Progreso Mensual</h6>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-sm">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Mes</th>
+                                        <th>Sesiones</th>
+                                        <th>Tiempo Total</th>
+                                        <th>Promedio/Sesión</th>
+                                        <th>Tipo Principal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${monthly.slice(0, 6).map(month => `
+                                        <tr>
+                                            <td>${month.month_name}</td>
+                                            <td>${month.sessions}</td>
+                                            <td>${month.total_time} min</td>
+                                            <td>${month.avg_session_time} min</td>
+                                            <td><span class="badge bg-secondary">${month.most_common_type}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Exportar datos
+        async function exportData(format) {
+            try {
+                const response = await fetch(`${API_BASE}/export/${format}`);
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    // Nombre del archivo según formato
+                    const timestamp = new Date().toISOString().slice(0, 10);
+                    const filenames = {
+                        csv: `mma_training_sessions_${timestamp}.csv`,
+                        excel: `mma_training_sessions_${timestamp}.xlsx`,
+                        pdf: `mma_training_report_${timestamp}.pdf`
+                    };
+                    
+                    a.download = filenames[format];
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showAlert(`¡Datos exportados a ${format.toUpperCase()} exitosamente! 📊`);
+                } else {
+                    const error = await response.json();
+                    showAlert('Error: ' + error.message, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error al exportar datos', 'danger');
+            }
+        }
+
+        // Actualizar badge del total de sesiones
+        function updateTotalBadge() {
+            document.getElementById('total-sessions-badge').textContent = sessions.length;
+        }
+
+        // Formatear fecha para mostrar
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            
+            const date = new Date(dateString + 'T00:00:00');
+            const today = new Date();
+            const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+            
+            // Comparar solo las fechas (sin hora)
+            const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+            
+            if (dateOnly.getTime() === todayOnly.getTime()) {
+                return '🔥 Hoy';
+            } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+                return '📅 Ayer';
+            } else {
+                return date.toLocaleDateString('es-ES', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    year: 'numeric' 
+                });
+            }
+        }
+
+        // Función para limpiar formularios
+        function clearForm(formId) {
+            document.getElementById(formId).reset();
+        }
+
+        // Event listeners adicionales
+        document.addEventListener('keydown', function(e) {
+            // Esc para cerrar modales
+            if (e.key === 'Escape') {
+                const openModals = document.querySelectorAll('.modal.show');
+                openModals.forEach(modal => {
+                    bootstrap.Modal.getInstance(modal)?.hide();
+                });
+            }
+        });
+
+        // Auto-refresh cada 30 segundos para mantener datos actualizados
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                loadStats();
+            }
+        }, 30000);
+
+        // Manejar visibilidad de la página
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                loadSessions();
+                loadStats();
+            }
+        });
+    </script>
+</body>
+</html>

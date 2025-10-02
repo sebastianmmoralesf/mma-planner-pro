@@ -14,7 +14,17 @@ from services.auth_service import AuthService
 
 # Configuración de la aplicación
 app = Flask(__name__, static_folder="static")
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://mma-planner-pro.onrender.com",
+            "http://localhost:5000", 
+            "http://127.0.0.1:5000"
+        ],
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO)
@@ -279,4 +289,5 @@ if __name__ == "__main__":
     os.makedirs("data", exist_ok=True)
     
     # Ejecutar en modo desarrollo
+
     app.run(debug=True, host="0.0.0.0", port=5000)

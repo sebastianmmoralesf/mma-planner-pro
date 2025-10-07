@@ -261,8 +261,8 @@ def login(data):
             "message": "Credenciales inválidas"
         }), 401
 
-# RUTAS DE IA - SUGERENCIAS INTELIGENTES
-from openai import OpenAI
+# RUTAS DE IA - SUGERENCIAS INTELIGENTES (VERSIÓN COMPATIBLE)
+import openai
 
 @app.route("/api/ai-suggestions", methods=["POST"])
 @handle_errors
@@ -292,16 +292,15 @@ def ai_suggestions():
                 "sugerencia": "⚠️ Configura tu API key de OpenAI para obtener sugerencias IA"
             })
             
-        client = OpenAI(api_key=api_key, timeout=30.0)
-        
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Más económico para empezar
+        # VERSIÓN COMPATIBLE con openai==0.28.1
+        openai.api_key = api_key
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Eres un entrenador profesional de MMA. Da consejos técnicos y específicos."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100,
-            temperature=0.7
+            max_tokens=100
         )
         
         suggestion = response.choices[0].message.content.strip()
@@ -314,7 +313,7 @@ def ai_suggestions():
         logger.error(f"Error OpenAI: {str(e)}")
         return jsonify({
             "status": "error",
-            "message": "Error al conectar con IA"
+            "message": f"Error IA: {str(e)}"
         }), 500
     
 # Manejo de errores globales
@@ -345,7 +344,4 @@ if __name__ == "__main__":
     os.makedirs("data", exist_ok=True)
     
     # Ejecutar en modo desarrollo
-
     app.run(debug=True, host="0.0.0.0", port=5000)
-
-

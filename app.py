@@ -32,35 +32,55 @@ CORS(app, resources={
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuración global de Google Gemini
-def configure_gemini():
-    """Configurar Google Gemini con parámetros optimizados"""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        logger.warning("GEMINI_API_KEY no encontrada en variables de entorno")
-        return None
+# Clase para manejar la configuración de Gemini
+class GeminiManager:
+    def __init__(self):
+        self.model = None
+        self.generation_config = None
+        self.is_configured = False
+        self.configure_gemini()
     
-    try:
-        # Configurar Google Gemini - VERSIÓN COMPATIBLE
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')  # ← ESTE SÍ FUNCIONA
+    def configure_gemini(self):
+        """Configurar Google Gemini con parámetros optimizados"""
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            logger.warning("GEMINI_API_KEY no encontrada en variables de entorno")
+            self.is_configured = False
+            return
         
-        # Configurar generación
-        generation_config = {
-            "temperature": 0.7,
-            "top_p": 0.8,
-            "top_k": 40,
-            "max_output_tokens": 100,
-        }
+        try:
+            # Configurar Google Gemini - VERSIÓN COMPATIBLE
+            genai.configure(api_key=api_key)
+            self.model = genai.GenerativeModel('gemini-pro')  # ← ESTE SÍ FUNCIONA
+            
+            # Configurar generación
+            self.generation_config = {
+                "temperature": 0.7,
+                "top_p": 0.8,
+                "top_k": 40,
+                "max_output_tokens": 100,
+            }
+            
+            self.is_configured = True
+            logger.info("✅ Google Gemini configurado correctamente")
+            
+        except Exception as e:
+            logger.error(f"Error configurando Gemini: {str(e)}")
+            self.is_configured = False
+    
+    def get_suggestion(self, prompt):
+        """Obtener sugerencia de Gemini"""
+        if not self.is_configured or not self.model:
+            raise Exception("Gemini no está configurado")
         
-        return model, generation_config
-        
-    except Exception as e:
-        logger.error(f"Error configurando Gemini: {str(e)}")
-        return None
+        response = self.model.generate_content(
+            prompt,
+            generation_config=self.generation_config
+        )
+        return response.text.strip()
 
-# Inicializar Gemini al arrancar la aplicación
-gemini_model, gemini_config = configure_gemini()
+# Inicializar el manager de Gemini
+gemini_manager = GeminiManager()
 
 # Servicios
 planner_service = PlannerService()
@@ -120,13 +140,11 @@ def home():
 @app.route("/api/health", methods=["GET"])
 def health_check():
     """Endpoint para verificar el estado de la API"""
-    gemini_status = "configured" if gemini_model else "not_configured"
-    
     return jsonify({
         "status": "ok",
         "message": "MMA Training Planner API funcionando correctamente",
         "timestamp": datetime.now().isoformat(),
-        "gemini_ai": gemini_status
+        "gemini_ai": "configured" if gemini_manager.is_configured else "not_configured"
     })
 
 # RUTAS DE SESIONES
@@ -332,29 +350,19 @@ Sesiones recientes:
 
     try:
         # Verificar configuración de Gemini
-        if not gemini_model:
-            api_key = os.getenv("GEMINI_API_KEY")
-            if not api_key:
-                return jsonify({
-                    "status": "success",
-                    "sugerencia": "⚠️ Configura tu GEMINI_API_KEY en las variables de entorno para obtener sugerencias IA",
-                    "tipo": "info"
-                })
+        if not gemini_manager.is_configured:
+            # Intentar reconfigurar por si la API key fue agregada después
+            gemini_manager.configure_gemini()
             
-            # Reintentar configuración
-            gemini_config_result = configure_gemini()
-            if not gemini_config_result:
-                raise Exception("No se pudo configurar Gemini")
-            
-            gemini_model, gemini_config = gemini_config_result
+        if not gemini_manager.is_configured:
+            return jsonify({
+                "status": "success",
+                "sugerencia": "⚠️ Configura tu GEMINI_API_KEY en las variables de entorno para obtener sugerencias IA",
+                "tipo": "info"
+            })
 
         # Generar sugerencia con Gemini usando la configuración optimizada
-        response = gemini_model.generate_content(
-            prompt,
-            generation_config=gemini_config
-        )
-        
-        suggestion = response.text.strip()
+        suggestion = gemini_manager.get_suggestion(prompt)
         
         logger.info(f"Sugerencia IA generada exitosamente")
         
@@ -428,9 +436,9 @@ def generate_fallback_suggestion(sessions):
 def ai_status():
     """Verificar el estado de la integración con Gemini AI"""
     status = {
-        "gemini_configured": gemini_model is not None,
+        "gemini_configured": gemini_manager.is_configured,
         "api_key_present": bool(os.getenv("GEMINI_API_KEY")),
-        "status": "active" if gemini_model else "inactive"
+        "status": "active" if gemini_manager.is_configured else "inactive"
     }
     
     return jsonify({
@@ -465,13 +473,5 @@ if __name__ == "__main__":
     os.makedirs("exports", exist_ok=True)
     os.makedirs("data", exist_ok=True)
     
-    # Log del estado de Gemini
-    if gemini_model:
-        logger.info("✅ Google Gemini configurado correctamente")
-    else:
-        logger.warning("⚠️ Google Gemini no configurado - Verifica GEMINI_API_KEY")
-    
     # Ejecutar en modo desarrollo
     app.run(debug=True, host="0.0.0.0", port=5000)
-
-

@@ -300,7 +300,7 @@ Sesiones:
             
         # Configurar Google Gemini
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         response = model.generate_content(prompt)
         suggestion = response.text.strip()
@@ -372,3 +372,4 @@ if __name__ == "__main__":
     
     # Ejecutar en modo desarrollo
     app.run(debug=True, host="0.0.0.0", port=5000)
+

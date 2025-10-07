@@ -304,39 +304,6 @@
             </div>
         </div>
 
-                <!-- Card de Asistente IA -->
-        <div class="card mb-4 animate__animated animate__fadeInUp">
-            <div class="card-header">
-                <i class="bi bi-robot"></i> Asistente de Entrenamiento IA
-            </div>
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <p class="mb-0 text-muted">
-                            Obtén consejos personalizados basados en tu historial de entrenamiento
-                        </p>
-                    </div>
-                    <div class="col-md-4 text-end">
-                        <button class="btn btn-primary btn-lg" onclick="getAIAdvice()" id="ai-advice-btn">
-                            <i class="bi bi-lightbulb"></i> Pedir Consejo IA
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Área de respuesta de IA -->
-                <div id="ai-advice-container" class="mt-3" style="display: none;">
-                    <div class="alert alert-info fade-in" id="ai-advice-alert">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-robot me-2" style="font-size: 1.2rem;"></i>
-                            <strong>Consejo de Entrenamiento:</strong>
-                        </div>
-                        <p class="mb-0 mt-2" id="ai-advice-text"></p>
-                        <small class="text-muted" id="ai-advice-type"></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Controles y Exportación -->
         <div class="card mb-4">
             <div class="card-body">
@@ -1020,87 +987,7 @@
                 loadStats();
             }
         });
-
-                // ========== FUNCIONES DE ASISTENTE IA ==========
-
-        // Obtener consejo de IA
-        async function getAIAdvice() {
-            const btn = document.getElementById('ai-advice-btn');
-            const originalText = btn.innerHTML;
-            
-            // Mostrar loading
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analizando...';
-            btn.disabled = true;
-            
-            try {
-                const response = await fetch(`${API_BASE}/ai-advice`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        sessions: sessions
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    showAIAdvice(result.advice, result.type);
-                } else {
-                    showAlert('Error al obtener consejo de IA: ' + result.message, 'danger');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showAlert('Error de conexión con el asistente IA', 'danger');
-            } finally {
-                // Restaurar botón
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-
-        // Mostrar consejo de IA
-        function showAIAdvice(advice, type) {
-            const container = document.getElementById('ai-advice-container');
-            const adviceText = document.getElementById('ai-advice-text');
-            const adviceType = document.getElementById('ai-advice-type');
-            
-            adviceText.textContent = advice;
-            
-            // Personalizar según el tipo
-            let typeText = '';
-            let alertClass = 'alert-info';
-            
-            switch(type) {
-                case 'ai':
-                    typeText = '🤖 Consejo generado por IA';
-                    alertClass = 'alert-primary';
-                    break;
-                case 'fallback':
-                    typeText = '💡 Consejo predefinido';
-                    alertClass = 'alert-warning';
-                    break;
-                case 'info':
-                    typeText = 'ℹ️ Información';
-                    alertClass = 'alert-info';
-                    break;
-            }
-            
-            adviceType.textContent = typeText;
-            
-            // Actualizar clases de alerta
-            const alert = document.getElementById('ai-advice-alert');
-            alert.className = `alert ${alertClass} fade-in`;
-            
-            // Mostrar contenedor
-            container.style.display = 'block';
-            
-            // Scroll suave a la sección
-            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
     </script>
 </body>
 
 </html>
-

@@ -97,41 +97,6 @@ class GeminiManager:
             raise Exception("La respuesta del servicio de IA tuvo un formato inesperado.")
 
 gemini_manager = GeminiManager()
-# ========== NUEVO SERVICIO IA ==========
-class AIAdvisorService:
-    def get_training_advice(self, sessions):
-        if not sessions:
-            return {
-                "advice": "💡 Agrega sesiones para recibir consejos personalizados.",
-                "type": "info"
-            }
-        
-        try:
-            if gemini_manager.is_configured:
-                prompt = self._build_prompt(sessions)
-                advice = gemini_manager.get_suggestion(prompt)
-                return {"advice": advice, "type": "ai"}
-            else:
-                return {"advice": self._fallback_advice(sessions), "type": "fallback"}
-        except Exception:
-            return {"advice": self._fallback_advice(sessions), "type": "fallback"}
-    
-    def _build_prompt(self, sessions):
-        prompt = "Eres entrenador de MMA. Analiza y da UN consejo práctico:\n"
-        for s in sessions[-5:]:
-            prompt += f"- {s.get('fecha')}: {s.get('tipo')} - {s.get('tiempo')}min\n"
-        prompt += "\nConsejo conciso:"
-        return prompt
-    
-    def _fallback_advice(self, sessions):
-        if len(sessions) < 2:
-            return "💡 ¡Agrega más sesiones para consejos personalizados!"
-        tipos = [s.get('tipo') for s in sessions]
-        if 'Grappling' not in tipos:
-            return "💡 Incluye sesiones de grappling para desarrollo completo."
-        return "💡 Mantén la consistencia en tu entrenamiento."
-
-ai_advisor = AIAdvisorService()
 
 def validate_json(required_fields=None):
     def decorator(f):
@@ -201,23 +166,6 @@ def ai_suggestions(data):
     except Exception as e:
         fallback = generate_fallback_suggestion(sessions)
         return jsonify({"status": "success", "sugerencia": fallback, "tipo": "fallback"})
-        
-# ========== NUEVA RUTA PARA EL ASISTENTE IA ==========
-@app.route("/api/ai-advice", methods=["POST"])
-@handle_errors
-@validate_json(required_fields=["sessions"])
-def get_ai_advice(data):
-    """NUEVA Ruta para el asistente IA - Usada por el frontend"""
-    sessions = data.get("sessions", [])
-    
-    # Obtener consejo del servicio de IA
-    result = ai_advisor.get_training_advice(sessions)
-    
-    return jsonify({
-        "status": "success",
-        "advice": result["advice"],
-        "type": result["type"]
-    })
 
 def generate_fallback_suggestion(sessions):
     return "💡 Mantén la consistencia. Varía entre grappling y striking para un desarrollo balanceado."

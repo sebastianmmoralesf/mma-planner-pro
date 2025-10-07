@@ -96,6 +96,7 @@ class GeminiManager:
             logger.error(f"Error al procesar la respuesta de Gemini. Formato inesperado. {e}")
             raise Exception("La respuesta del servicio de IA tuvo un formato inesperado.")
 
+# Buscar esta línea (después de las importaciones):
 gemini_manager = GeminiManager()
 
 def validate_json(required_fields=None):
@@ -170,8 +171,79 @@ def ai_suggestions(data):
 def generate_fallback_suggestion(sessions):
     return "💡 Mantén la consistencia. Varía entre grappling y striking para un desarrollo balanceado."
 
+# AGREGAR esta nueva ruta después de las rutas existentes:
+@app.route("/api/ai-advice", methods=["POST"])
+@handle_errors
+@validate_json(required_fields=["sessions"])
+def get_ai_advice(data):
+    """Obtener consejos de IA basados en las sesiones de entrenamiento"""
+    sessions = data.get("sessions", [])
+    
+    if not sessions:
+        return jsonify({
+            "status": "success", 
+            "advice": "💡 Comienza agregando algunas sesiones de entrenamiento para recibir consejos personalizados.",
+            "type": "info"
+        })
+    
+    try:
+        # Intentar con Gemini si está configurado
+        if gemini_manager.is_configured:
+            prompt = _build_ai_prompt(sessions)
+            advice = gemini_manager.get_suggestion(prompt)
+            return jsonify({
+                "status": "success", 
+                "advice": advice,
+                "type": "ai"
+            })
+        else:
+            # Fallback a consejos predefinidos
+            advice = _generate_fallback_advice(sessions)
+            return jsonify({
+                "status": "success", 
+                "advice": advice,
+                "type": "fallback"
+            })
+            
+    except Exception as e:
+        logger.error(f"Error en IA: {str(e)}")
+        advice = _generate_fallback_advice(sessions)
+        return jsonify({
+            "status": "success", 
+            "advice": advice,
+            "type": "fallback"
+        })
+
+def _build_ai_prompt(sessions):
+    """Construir prompt para la IA"""
+    prompt = """Eres un entrenador experto de MMA. Analiza estas sesiones de entrenamiento y da UN consejo específico y práctico para mejorar. 
+    
+Sesiones recientes:
+"""
+    
+    for session in sessions[-10:]:  # Últimas 10 sesiones
+        prompt += f"- {session.get('fecha')}: {session.get('tipo')} - {session.get('tiempo')}min - Intensidad: {session.get('intensidad', 'Media')}\n"
+    
+    prompt += "\nConsejo conciso (máximo 2 líneas):"
+    return prompt
+
+def _generate_fallback_advice(sessions):
+    """Generar consejo predefinido basado en datos reales"""
+    if len(sessions) < 3:
+        return "💡 Agrega más sesiones para recibir consejos personalizados sobre tu entrenamiento."
+    
+    # Análisis simple de los datos
+    tipos = [s.get('tipo') for s in sessions]
+    tiempo_total = sum(s.get('tiempo', 0) for s in sessions)
+    
+    if tiempo_total < 180:  # Menos de 3 horas
+        return "💡 Considera aumentar gradualmente el tiempo de entrenamiento para mejorar tu resistencia."
+    elif 'Grappling' not in tipos and 'Striking' not in tipos:
+        return "💡 Para un desarrollo balanceado, incluye sesiones de both grappling y striking."
+    else:
+        return "💡 Mantén la consistencia en tu entrenamiento. La regularidad es clave para el progreso en MMA."
+
 if __name__ == "__main__":
     os.makedirs("exports", exist_ok=True)
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=False, host="0.0.0.0", port=port)
-

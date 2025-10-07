@@ -477,8 +477,8 @@ if __name__ == "__main__":
     # Crear carpeta de exportaciones
     os.makedirs("exports", exist_ok=True)
     
-    # Obtener puerto
-    port = int(os.environ.get("PORT", 5000))
+    # Obtener puerto - USAR VARIABLE DE ENTORNO SI EXISTE
+    port = int(os.environ.get("PORT", 10000))
     
     # Mensaje de inicio
     logger.info("=" * 50)
@@ -490,3 +490,4 @@ if __name__ == "__main__":
     
     # Iniciar servidor
     app.run(debug=False, host="0.0.0.0", port=port)
+

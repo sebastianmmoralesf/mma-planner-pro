@@ -335,12 +335,8 @@ def handle_errors(f):
 
 @app.route("/", methods=["GET"])
 def home():
-    """Ruta de inicio"""
-    return jsonify({
-        "app": "MMA Training Planner Pro API",
-        "version": "2.0",
-        "status": "running"
-    })
+    """Ruta de inicio - Sirve el frontend"""
+    return send_from_directory('.', 'index.html')
 
 
 @app.route("/api/health", methods=["GET"])

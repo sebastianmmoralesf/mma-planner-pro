@@ -32,6 +32,36 @@ CORS(app, resources={
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Configuración global de Google Gemini
+def configure_gemini():
+    """Configurar Google Gemini con parámetros optimizados"""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        logger.warning("GEMINI_API_KEY no encontrada en variables de entorno")
+        return None
+    
+    try:
+        # Configurar Google Gemini - VERSIÓN COMPATIBLE
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro')  # ← ESTE SÍ FUNCIONA
+        
+        # Configurar generación
+        generation_config = {
+            "temperature": 0.7,
+            "top_p": 0.8,
+            "top_k": 40,
+            "max_output_tokens": 100,
+        }
+        
+        return model, generation_config
+        
+    except Exception as e:
+        logger.error(f"Error configurando Gemini: {str(e)}")
+        return None
+
+# Inicializar Gemini al arrancar la aplicación
+gemini_model, gemini_config = configure_gemini()
+
 # Servicios
 planner_service = PlannerService()
 export_service = ExportService()
@@ -90,10 +120,13 @@ def home():
 @app.route("/api/health", methods=["GET"])
 def health_check():
     """Endpoint para verificar el estado de la API"""
+    gemini_status = "configured" if gemini_model else "not_configured"
+    
     return jsonify({
         "status": "ok",
         "message": "MMA Training Planner API funcionando correctamente",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "gemini_ai": gemini_status
     })
 
 # RUTAS DE SESIONES
@@ -266,8 +299,9 @@ def login(data):
 # RUTAS DE IA - SUGERENCIAS INTELIGENTES CON GOOGLE GEMINI
 @app.route("/api/ai-suggestions", methods=["POST"])
 @handle_errors
-def ai_suggestions():
-    data = request.get_json()
+@validate_json(required_fields=["sessions"])
+def ai_suggestions(data):
+    """Generar sugerencias de entrenamiento usando IA"""
     sessions = data.get("sessions", [])
     
     if not sessions:
@@ -276,47 +310,104 @@ def ai_suggestions():
             "message": "No hay sesiones para analizar"
         }), 400
 
-    # Convierte las sesiones a texto legible
+    # Construir prompt mejorado
     prompt = """Eres un entrenador profesional de MMA. Analiza estas sesiones de entrenamiento y da UNA sugerencia específica para mejorar. 
-Sé directo, técnico y conciso (máximo 2 líneas). No des consejos genéricos.
+Sé directo, técnico y conciso (máximo 100 palabras). No des consejos genéricos. Enfócate en aspectos técnicos, tácticos o de periodización.
 
-Sesiones:
+Sesiones recientes:
 """
-    for s in sessions[-8:]:  # Últimas 8 sesiones
+    for s in sessions[-10:]:  # Últimas 10 sesiones para mejor contexto
         fecha = s.get('fecha', '')
         tipo = s.get('tipo', 'desconocido')
         tiempo = s.get('tiempo', 0)
         intensidad = s.get('intensidad', 'Media')
-        prompt += f"- {fecha}: {tipo} - {tiempo}min, Intensidad: {intensidad}\n"
+        notas = s.get('notas', '')
+        
+        prompt += f"- {fecha}: {tipo} - {tiempo}min, Intensidad: {intensidad}"
+        if notas:
+            prompt += f", Notas: {notas}"
+        prompt += "\n"
+
+    prompt += "\nSugerencia específica:"
 
     try:
-        # Para evitar errores si no hay API key
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            return jsonify({
-                "status": "success",
-                "sugerencia": "⚠️ Configura tu API key de Google Gemini para obtener sugerencias IA"
-            })
+        # Verificar configuración de Gemini
+        if not gemini_model:
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                return jsonify({
+                    "status": "success",
+                    "sugerencia": "⚠️ Configura tu GEMINI_API_KEY en las variables de entorno para obtener sugerencias IA",
+                    "tipo": "info"
+                })
             
-        # Configurar Google Gemini
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+            # Reintentar configuración
+            gemini_config_result = configure_gemini()
+            if not gemini_config_result:
+                raise Exception("No se pudo configurar Gemini")
+            
+            gemini_model, gemini_config = gemini_config_result
+
+        # Generar sugerencia con Gemini usando la configuración optimizada
+        response = gemini_model.generate_content(
+            prompt,
+            generation_config=gemini_config
+        )
         
-        response = model.generate_content(prompt)
         suggestion = response.text.strip()
+        
+        logger.info(f"Sugerencia IA generada exitosamente")
         
         return jsonify({
             "status": "success",
-            "sugerencia": suggestion
+            "sugerencia": suggestion,
+            "tipo": "ia"
         })
 
     except Exception as e:
         logger.error(f"Error Gemini: {str(e)}")
         
-        # Fallback inteligente basado en las sesiones
-        total_time = sum(s.get('tiempo', 0) for s in sessions)
-        tipos = [s.get('tipo', '') for s in sessions]
+        # Fallback inteligente mejorado basado en las sesiones
+        fallback_suggestion = generate_fallback_suggestion(sessions)
         
+        return jsonify({
+            "status": "success",
+            "sugerencia": fallback_suggestion,
+            "tipo": "fallback"
+        })
+
+def generate_fallback_suggestion(sessions):
+    """Generar sugerencia de fallback inteligente basada en los datos"""
+    if not sessions:
+        return "💡 Comienza registrando tus primeras sesiones de entrenamiento para obtener sugerencias personalizadas."
+    
+    total_time = sum(s.get('tiempo', 0) for s in sessions)
+    tipos = [s.get('tipo', '') for s in sessions]
+    total_sessions = len(sessions)
+    
+    # Análisis de patrones para sugerencias más específicas
+    grappling_count = sum(1 for tipo in tipos if 'grappling' in tipo.lower() or 'jiu' in tipo.lower() or 'bjj' in tipo.lower())
+    striking_count = sum(1 for tipo in tipos if 'boxeo' in tipo.lower() or 'striking' in tipo.lower() or 'muay' in tipo.lower())
+    conditioning_count = sum(1 for tipo in tipos if 'condicionamiento' in tipo.lower() or 'fuerza' in tipo.lower())
+    
+    # Sugerencias basadas en análisis de datos
+    if total_sessions < 3:
+        return "🔥 Buena base. Mantén la consistencia y ve incrementando gradualmente la intensidad."
+    
+    elif total_time > 300:  # Más de 5 horas semanales
+        return "💪 Volumen excelente. Considera agregar un día de descanso activo con movilidad y recuperación."
+    
+    elif grappling_count > striking_count * 2:
+        return "🥊 Balancea tu entrenamiento agregando más sesiones de striking para desarrollo completo en MMA."
+    
+    elif striking_count > grappling_count * 2:
+        return "🤼 Enfócate en mejorar tu grappling. Agrega sesiones de BJJ o wrestling para equilibrio."
+    
+    elif conditioning_count == 0:
+        return "🏋️ Agrega entrenamiento de fuerza y acondicionamiento para mejorar tu rendimiento general."
+    
+    else:
+        # Sugerencias generales balanceadas
         fallback_suggestions = [
             "💡 Varía entre grappling y striking para desarrollo balanceado",
             "🔥 Mantén la consistencia y agrega días de descanso activo",
@@ -324,24 +415,28 @@ Sesiones:
             "💪 Incrementa gradualmente la duración de tus sesiones",
             "🔄 Incluye entrenamiento de movilidad para mejorar flexibilidad",
             "⏱️ Controla los tiempos de descanso entre rounds",
-            "🏋️ Agrega ejercicios de fuerza para mejorar tu poder",
-            "🧘 No descuides el trabajo de flexibilidad y recuperación"
+            "🏋️ Agrega ejercicios de fuerza funcional para mejorar tu poder",
+            "🧘 No descuides el trabajo de flexibilidad y recuperación",
+            "🎯 Trabaja transiciones entre striking y grappling",
+            "💥 Incorpora sparring controlado para aplicar técnicas"
         ]
-        
-        # Sugerencia más específica basada en los datos
-        if total_time > 120:
-            suggestion = "💪 Buen volumen de entrenamiento. Considera agregar un día de descanso activo con movilidad."
-        elif "Grappling" in tipos and "Boxeo" not in tipos:
-            suggestion = "🥊 Balancea tu entrenamiento agregando sesiones de striking para desarrollo completo."
-        elif len(sessions) < 3:
-            suggestion = "🔥 Buena base. Mantén la consistencia y ve incrementando gradualmente la intensidad."
-        else:
-            suggestion = random.choice(fallback_suggestions)
-        
-        return jsonify({
-            "status": "success",
-            "sugerencia": suggestion
-        })
+        return random.choice(fallback_suggestions)
+
+# Ruta adicional para verificar estado de Gemini
+@app.route("/api/ai-status", methods=["GET"])
+@handle_errors
+def ai_status():
+    """Verificar el estado de la integración con Gemini AI"""
+    status = {
+        "gemini_configured": gemini_model is not None,
+        "api_key_present": bool(os.getenv("GEMINI_API_KEY")),
+        "status": "active" if gemini_model else "inactive"
+    }
+    
+    return jsonify({
+        "status": "success",
+        "data": status
+    })
     
 # Manejo de errores globales
 @app.errorhandler(404)
@@ -370,6 +465,13 @@ if __name__ == "__main__":
     os.makedirs("exports", exist_ok=True)
     os.makedirs("data", exist_ok=True)
     
+    # Log del estado de Gemini
+    if gemini_model:
+        logger.info("✅ Google Gemini configurado correctamente")
+    else:
+        logger.warning("⚠️ Google Gemini no configurado - Verifica GEMINI_API_KEY")
+    
     # Ejecutar en modo desarrollo
     app.run(debug=True, host="0.0.0.0", port=5000)
+
 

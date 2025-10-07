@@ -292,7 +292,7 @@ def ai_suggestions():
                 "sugerencia": "⚠️ Configura tu API key de OpenAI para obtener sugerencias IA"
             })
             
-        client = OpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key, timeout=30.0)
         
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",  # Más económico para empezar
@@ -347,4 +347,5 @@ if __name__ == "__main__":
     # Ejecutar en modo desarrollo
 
     app.run(debug=True, host="0.0.0.0", port=5000)
+
 

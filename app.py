@@ -6,7 +6,6 @@ import logging
 from functools import wraps
 import hashlib
 from werkzeug.exceptions import BadRequest
-import google.generativeai as genai
 import random
 import requests  # ← AÑADIR ESTO
 import json      # ← AÑADIR ESTO

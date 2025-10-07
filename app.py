@@ -6,6 +6,8 @@ import logging
 from functools import wraps
 import hashlib
 from werkzeug.exceptions import BadRequest
+import google.generativeai as genai
+import random
 
 from services.planner_service import PlannerService
 from services.export_service import ExportService
@@ -261,9 +263,7 @@ def login(data):
             "message": "Credenciales inválidas"
         }), 401
 
-# RUTAS DE IA - SUGERENCIAS INTELIGENTES (VERSIÓN COMPATIBLE)
-import openai
-
+# RUTAS DE IA - SUGERENCIAS INTELIGENTES CON GOOGLE GEMINI
 @app.route("/api/ai-suggestions", methods=["POST"])
 @handle_errors
 def ai_suggestions():
@@ -277,44 +277,71 @@ def ai_suggestions():
         }), 400
 
     # Convierte las sesiones a texto legible
-    prompt = "Estas son las sesiones de entrenamiento MMA:\n"
-    for s in sessions[-10:]:  # Últimas 10 sesiones
-        prompt += f"- {s.get('fecha', '')}: {s.get('tipo', 'desconocido')} - {s.get('tiempo', 0)}min, Intensidad: {s.get('intensidad', 'Media')}\n"
-    
-    prompt += "\nComo entrenador profesional de MMA, da UNA sugerencia específica para mejorar (máximo 2 líneas, sé directo y técnico)."
+    prompt = """Eres un entrenador profesional de MMA. Analiza estas sesiones de entrenamiento y da UNA sugerencia específica para mejorar. 
+Sé directo, técnico y conciso (máximo 2 líneas). No des consejos genéricos.
+
+Sesiones:
+"""
+    for s in sessions[-8:]:  # Últimas 8 sesiones
+        fecha = s.get('fecha', '')
+        tipo = s.get('tipo', 'desconocido')
+        tiempo = s.get('tiempo', 0)
+        intensidad = s.get('intensidad', 'Media')
+        prompt += f"- {fecha}: {tipo} - {tiempo}min, Intensidad: {intensidad}\n"
 
     try:
         # Para evitar errores si no hay API key
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             return jsonify({
                 "status": "success",
-                "sugerencia": "⚠️ Configura tu API key de OpenAI para obtener sugerencias IA"
+                "sugerencia": "⚠️ Configura tu API key de Google Gemini para obtener sugerencias IA"
             })
             
-        # VERSIÓN COMPATIBLE con openai==0.28.1
-        openai.api_key = api_key
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Eres un entrenador profesional de MMA. Da consejos técnicos y específicos."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=100
-        )
+        # Configurar Google Gemini
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro')
         
-        suggestion = response.choices[0].message.content.strip()
+        response = model.generate_content(prompt)
+        suggestion = response.text.strip()
+        
         return jsonify({
             "status": "success",
             "sugerencia": suggestion
         })
 
     except Exception as e:
-        logger.error(f"Error OpenAI: {str(e)}")
+        logger.error(f"Error Gemini: {str(e)}")
+        
+        # Fallback inteligente basado en las sesiones
+        total_time = sum(s.get('tiempo', 0) for s in sessions)
+        tipos = [s.get('tipo', '') for s in sessions]
+        
+        fallback_suggestions = [
+            "💡 Varía entre grappling y striking para desarrollo balanceado",
+            "🔥 Mantén la consistencia y agrega días de descanso activo",
+            "🥊 Enfócate en la técnica antes que la intensidad para prevenir lesiones",
+            "💪 Incrementa gradualmente la duración de tus sesiones",
+            "🔄 Incluye entrenamiento de movilidad para mejorar flexibilidad",
+            "⏱️ Controla los tiempos de descanso entre rounds",
+            "🏋️ Agrega ejercicios de fuerza para mejorar tu poder",
+            "🧘 No descuides el trabajo de flexibilidad y recuperación"
+        ]
+        
+        # Sugerencia más específica basada en los datos
+        if total_time > 120:
+            suggestion = "💪 Buen volumen de entrenamiento. Considera agregar un día de descanso activo con movilidad."
+        elif "Grappling" in tipos and "Boxeo" not in tipos:
+            suggestion = "🥊 Balancea tu entrenamiento agregando sesiones de striking para desarrollo completo."
+        elif len(sessions) < 3:
+            suggestion = "🔥 Buena base. Mantén la consistencia y ve incrementando gradualmente la intensidad."
+        else:
+            suggestion = random.choice(fallback_suggestions)
+        
         return jsonify({
-            "status": "error",
-            "message": f"Error IA: {str(e)}"
-        }), 500
+            "status": "success",
+            "sugerencia": suggestion
+        })
     
 # Manejo de errores globales
 @app.errorhandler(404)

@@ -261,6 +261,62 @@ def login(data):
             "message": "Credenciales inválidas"
         }), 401
 
+# RUTAS DE IA - SUGERENCIAS INTELIGENTES
+from openai import OpenAI
+
+@app.route("/api/ai-suggestions", methods=["POST"])
+@handle_errors
+def ai_suggestions():
+    data = request.get_json()
+    sessions = data.get("sessions", [])
+    
+    if not sessions:
+        return jsonify({
+            "status": "error", 
+            "message": "No hay sesiones para analizar"
+        }), 400
+
+    # Convierte las sesiones a texto legible
+    prompt = "Estas son las sesiones de entrenamiento MMA:\n"
+    for s in sessions[-10:]:  # Últimas 10 sesiones
+        prompt += f"- {s.get('fecha', '')}: {s.get('tipo', 'desconocido')} - {s.get('tiempo', 0)}min, Intensidad: {s.get('intensidad', 'Media')}\n"
+    
+    prompt += "\nComo entrenador profesional de MMA, da UNA sugerencia específica para mejorar (máximo 2 líneas, sé directo y técnico)."
+
+    try:
+        # Para evitar errores si no hay API key
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return jsonify({
+                "status": "success",
+                "sugerencia": "⚠️ Configura tu API key de OpenAI para obtener sugerencias IA"
+            })
+            
+        client = OpenAI(api_key=api_key)
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",  # Más económico para empezar
+            messages=[
+                {"role": "system", "content": "Eres un entrenador profesional de MMA. Da consejos técnicos y específicos."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=100,
+            temperature=0.7
+        )
+        
+        suggestion = response.choices[0].message.content.strip()
+        return jsonify({
+            "status": "success",
+            "sugerencia": suggestion
+        })
+
+    except Exception as e:
+        logger.error(f"Error OpenAI: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": "Error al conectar con IA"
+        }), 500
+    
 # Manejo de errores globales
 @app.errorhandler(404)
 def not_found(error):
@@ -291,3 +347,4 @@ if __name__ == "__main__":
     # Ejecutar en modo desarrollo
 
     app.run(debug=True, host="0.0.0.0", port=5000)
+

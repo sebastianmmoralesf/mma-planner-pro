@@ -51,7 +51,7 @@ class GeminiManager:
         try:
             # Configurar Google Gemini - VERSIÓN COMPATIBLE
             genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-pro')  # ← ESTE SÍ FUNCIONA
+            self.model = genai.GenerativeModel('gemini-1.5-flash')  # Modelo más actual 
             
             # Configurar generación
             self.generation_config = {
@@ -523,4 +523,5 @@ if __name__ == "__main__":
     
     # Ejecutar en modo desarrollo
     app.run(debug=True, host="0.0.0.0", port=5000)
+
 

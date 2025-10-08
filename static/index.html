@@ -317,7 +317,7 @@
                     <div class="col-md-6 text-end export-buttons">
                         <!-- BOTÓN NUEVO DE CONSEJO RÁPIDO -->
                         <button class="btn btn-warning me-2" onclick="getQuickAdvice()" id="advice-btn">
-                            <i class="bi bi-lightbulb"></i> Consejo Rápido
+                            <i class="bi bi-lightbulb"></i> Consejo de IA
                         </button>
                         <button class="btn btn-outline-primary" onclick="exportData('csv')">
                             <i class="bi bi-filetype-csv"></i> CSV
@@ -999,7 +999,7 @@
             }
         });
                 // =============================================
-        // FUNCIÓN NUEVA: CONSEJO RÁPIDO
+        // FUNCIÓN NUEVA: CONSEJO DE IA
         // =============================================
         async function getQuickAdvice() {
             const button = document.getElementById('advice-btn');
@@ -1008,7 +1008,7 @@
             // Deshabilitar botón y mostrar loading
             button.disabled = true;
             button.innerHTML = '<i class="bi bi-hourglass-split"></i> Analizando...';
-            adviceDiv.innerHTML = '<div class="alert alert-info animate__animated animate__fadeIn">🤔 Analizando tus sesiones...</div>';
+            adviceDiv.innerHTML = '<div class="alert alert-info animate__animated animate__fadeIn">🤖 Consultando a la IA...</div>';
 
             try {
                 const response = await fetch('/api/quick-advice', {
@@ -1023,11 +1023,12 @@
                 if (result.status === 'success') {
                     const typeClass = result.type === 'ia' ? 'alert-success' : 'alert-warning';
                     const typeText = result.type === 'ia' ? 'IA' : 'Sistema';
+                    const icon = result.type === 'ia' ? '🤖' : '💡';
                     
                     adviceDiv.innerHTML = `
                         <div class="alert ${typeClass} animate__animated animate__fadeInUp">
                             <h6 class="alert-heading">
-                                <i class="bi bi-lightbulb-fill"></i> 💡 Consejo del Día
+                                <i class="bi bi-lightbulb-fill"></i> 💡 Consejo generado por IA
                                 <small class="float-end badge bg-${result.type === 'ia' ? 'success' : 'warning'}">${typeText}</small>
                             </h6>
                             <hr>
@@ -1035,19 +1036,20 @@
                         </div>
                     `;
                 } else {
-                    adviceDiv.innerHTML = '<div class="alert alert-danger">⚠️ Error obteniendo consejo</div>';
+                    adviceDiv.innerHTML = '<div class="alert alert-danger">⚠️ Error consultando a la IA</div>';
                 }
             } catch (error) {
                 console.error('Error:', error);
-                adviceDiv.innerHTML = '<div class="alert alert-danger">⚠️ Error de conexión</div>';
+                adviceDiv.innerHTML = '<div class="alert alert-danger">⚠️ Error de conexión con la IA</div>';
             } finally {
                 // Restaurar botón
                 button.disabled = false;
-                button.innerHTML = '<i class="bi bi-lightbulb"></i> Consejo Rápido';
+                button.innerHTML = '<i class="bi bi-lightbulb"></i> Consejo de IA';
             }
         }
     </script>
 </body>
 
 </html>
+
 

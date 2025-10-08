@@ -383,6 +383,54 @@ Sesiones recientes:
             "sugerencia": fallback_suggestion,
             "tipo": "fallback"
         })
+@app.route("/api/quick-advice", methods=["POST"])
+@handle_errors
+def quick_advice():
+    """Endpoint específico para el botón de consejo rápido"""
+    sessions = planner_service.load_sessions()
+    
+    if not sessions:
+        return jsonify({
+            "status": "success",
+            "advice": "🎯 Comienza registrando tus primeras sesiones para obtener consejos personalizados!",
+            "type": "info"
+        })
+    
+    # Usar la misma lógica que ai-suggestions pero simplificada
+    prompt = """Eres un entrenador de MMA. Da UN consejo específico y corto (máximo 60 palabras) 
+basado en estas sesiones. Sé directo y técnico:
+
+Sesiones recientes:
+"""
+    for s in sessions[-5:]:  # Solo últimas 5 para ser más rápido
+        fecha = s.get('fecha', '')
+        tipo = s.get('tipo', 'desconocido')
+        tiempo = s.get('tiempo', 0)
+        prompt += f"- {fecha}: {tipo} - {tiempo}min\n"
+
+    prompt += "\nConsejo rápido:"
+
+    try:
+        if not gemini_manager.is_configured:
+            gemini_manager.configure_gemini()
+            
+        if gemini_manager.is_configured:
+            suggestion = gemini_manager.get_suggestion(prompt)
+            return jsonify({
+                "status": "success",
+                "advice": suggestion,
+                "type": "ia"
+            })
+    except Exception as e:
+        logger.error(f"Error IA en quick-advice: {str(e)}")
+
+    # Fallback automático si falla la IA
+    fallback_advice = generate_fallback_suggestion(sessions)
+    return jsonify({
+        "status": "success", 
+        "advice": fallback_advice,
+        "type": "fallback"
+    })
 
 def generate_fallback_suggestion(sessions):
     """Generar sugerencia de fallback inteligente basada en los datos"""
@@ -475,3 +523,4 @@ if __name__ == "__main__":
     
     # Ejecutar en modo desarrollo
     app.run(debug=True, host="0.0.0.0", port=5000)
+

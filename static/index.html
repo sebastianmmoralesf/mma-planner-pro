@@ -326,6 +326,13 @@
                         </button>
                     </div>
                 </div>
+                
+                <!-- CONTENEDOR PARA MOSTRAR EL CONSEJO (se agrega aquí) -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div id="advice-container"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -987,6 +994,54 @@
                 loadStats();
             }
         });
+                // =============================================
+        // FUNCIÓN NUEVA: CONSEJO RÁPIDO
+        // =============================================
+        async function getQuickAdvice() {
+            const button = document.getElementById('advice-btn');
+            const adviceDiv = document.getElementById('advice-container');
+            
+            // Deshabilitar botón y mostrar loading
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split"></i> Analizando...';
+            adviceDiv.innerHTML = '<div class="alert alert-info animate__animated animate__fadeIn">🤔 Analizando tus sesiones...</div>';
+
+            try {
+                const response = await fetch('/api/quick-advice', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const typeClass = result.type === 'ia' ? 'alert-success' : 'alert-warning';
+                    const typeText = result.type === 'ia' ? 'IA' : 'Sistema';
+                    
+                    adviceDiv.innerHTML = `
+                        <div class="alert ${typeClass} animate__animated animate__fadeInUp">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-lightbulb-fill"></i> 💡 Consejo del Día
+                                <small class="float-end badge bg-${result.type === 'ia' ? 'success' : 'warning'}">${typeText}</small>
+                            </h6>
+                            <hr>
+                            <p class="mb-0 fw-bold">${result.advice}</p>
+                        </div>
+                    `;
+                } else {
+                    adviceDiv.innerHTML = '<div class="alert alert-danger">⚠️ Error obteniendo consejo</div>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                adviceDiv.innerHTML = '<div class="alert alert-danger">⚠️ Error de conexión</div>';
+            } finally {
+                // Restaurar botón
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-lightbulb"></i> Consejo Rápido';
+            }
+        }
     </script>
 </body>
 
